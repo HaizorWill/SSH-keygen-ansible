@@ -1,0 +1,24 @@
+---
+  - name: local ssh keys setup
+    hosts: localhost
+    vars: 
+      passphrase: mypassphrase
+      keytype: rsa
+    tasks:
+      - name: check that the key exists
+        stat:
+          path: ~/.ssh/id_rsa
+        register: keyexist
+
+      - name: generate keys if don't exist
+        command: "ssh-keygen -q -t {{keytype}} -f ~/.ssh/id_rsa -C '' -N {{ passphrase }}"
+        when: not keyexist.stat.exists
+        
+  - name: setup passwordless SSH
+    hosts: all
+    tasks:
+      - name: uploading public key
+        authorized_key:
+          user: "{{ansible_user}}"
+          state: present
+          key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
